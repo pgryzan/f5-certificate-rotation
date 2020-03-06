@@ -34,7 +34,7 @@ This is an example of how rotate certificates on an F5 LTM using Vault and Consu
 
   ![alt text](https://github.com/pgryzan/f5-certificate-rotation/blob/master/images/F5%20VIP.png "F5 VIP")
 * Now your ready to SSH into the Hashistack vm. Run the outputs ssh_hashistack command to login into the vm and change the directory to /tmp. This is where all of the certificate rotation action is happening.
-* Take a look at the certs.tmpl file. This is the temaplate that Consul Template uses to create the certs.json file. The certs.json file is uploaded to the F5 VM to rotate the certificate.
+* Take a look at the certs.tmpl file. This is the template that Consul Template uses to create the certs.json file. The certs.json file is uploaded to the F5 VM to rotate the certificate.
 * Take a look at the certs.json file. Notice the we've already setup the Vault PKI Engine to rotate the certificates every 30 seconds. You can watch the remarks timestamp update by running:
   ```bash
   cat certs.json
