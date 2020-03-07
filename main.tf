@@ -16,10 +16,10 @@ terraform {
 locals {
     big_ip_address          = "${ google_compute_instance.big_ip.network_interface.0.access_config.0.nat_ip }:${ var.f5.port }"
     basic_creds             = base64encode("${ var.f5.username }:${ var.f5.password }")
-    test_as3                = "curl --silent --insecure -H 'Authorization: Basic ${local.basic_creds}' https://${local.big_ip_address}/mgmt/tm/ltm | jq"
-    create_vip              = "curl -X POST --silent --insecure -H 'Content-Type: application/json' -H 'Authorization: Basic ${local.basic_creds}' -d @https.json https://${local.big_ip_address}/mgmt/shared/appsvcs/declare | jq"
     update_vip              = "curl -X PATCH --silent --insecure -H 'Content-Type: application/json' -H 'Authorization: Basic ${local.basic_creds}' -d @certs.json https://${local.big_ip_address}/mgmt/shared/appsvcs/declare | jq"
-    delete_vip              = "curl -X DELETE --silent --insecure -H 'Content-Type: application/json' -H 'Authorization: Basic ${local.basic_creds}' https://${local.big_ip_address}//mgmt/shared/appsvcs/declare/Demo | jq"
+//    test_as3                = "curl --silent --insecure -H 'Authorization: Basic ${local.basic_creds}' https://${local.big_ip_address}/mgmt/tm/ltm | jq"
+//    create_vip              = "curl -X POST --silent --insecure -H 'Content-Type: application/json' -H 'Authorization: Basic ${local.basic_creds}' -d @https.json https://${local.big_ip_address}/mgmt/shared/appsvcs/declare | jq"
+//    delete_vip              = "curl -X DELETE --silent --insecure -H 'Content-Type: application/json' -H 'Authorization: Basic ${local.basic_creds}' https://${local.big_ip_address}//mgmt/shared/appsvcs/declare/Demo | jq"
 }
 
 provider "google" {
@@ -31,7 +31,7 @@ provider "google" {
 
 data "template_file" "f5_init" {
     template = file("templates/f5-init.sh")
-    vars = {
+    vars                    = {
         username            = var.f5.username
         password            = var.f5.password
     }
@@ -39,10 +39,13 @@ data "template_file" "f5_init" {
 
 data "template_file" "hashistack_init" {
     template = file("templates/hashistack-init.sh")
-    vars = {
+    vars                    = {
         VAULT_VERSION       = "1.3.2"
         CONSUL_TEMPLATE_VERSION = "0.24.1"
         UPDATE_VIP          = local.update_vip
+        F5_USERNAME         = var.f5.username
+        F5_PASSWORD         = var.f5.password
+        BIG_IP              = google_compute_instance.big_ip.network_interface.0.network_ip
     }
 }
 
@@ -59,7 +62,7 @@ resource "google_compute_firewall" "default" {
 resource "google_compute_instance" "big_ip" {
     name                    = "big-ip"
     machine_type            = "e2-standard-4"
-    metadata_startup_script = data.template_file.f5_init.rendered
+    //metadata_startup_script = data.template_file.f5_init.rendered
 
     boot_disk {
         initialize_params {
@@ -109,6 +112,21 @@ resource "google_compute_instance" "hashistack" {
     provisioner "file" {
         source              = "templates/certs.tmpl"
         destination         = "/tmp/certs.tmpl"
+    }
+
+    provisioner "file" {
+        source              = "templates/https.tmpl"
+        destination         = "/tmp/https.tmpl"
+    }
+
+    provisioner "file" {
+        source              = "scripts/install-rpm.sh"
+        destination         = "/tmp/install-rpm.sh"
+    }
+
+    provisioner "file" {
+        content             = file(var.ssh.private_key)
+        destination         = "/tmp/id_rsa"
     }
 
     provisioner "remote-exec" {

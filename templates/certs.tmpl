@@ -14,6 +14,11 @@
         "op": "replace",
         "path": "/Demo/HTTPS/webcert/privateKey",
         "value": "{{ .Data.private_key | toJSON | replaceAll "\"" "" }}"
+    },
+    {
+        "op": "replace",
+        "path": "/Demo/HTTPS/webcert/chainCA",
+        "value": "{{ .Data.issuing_ca | toJSON | replaceAll "\"" "" }}"
     }
 ]
 {{ end }}
